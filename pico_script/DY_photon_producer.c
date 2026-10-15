@@ -5,6 +5,7 @@
 #include <string>
 
 #include "TFile.h"
+#include "TChain.h"
 #include "TTree.h"
 #include "TString.h"
 #include "TSystem.h"
@@ -15,10 +16,11 @@
 #include "TMVA/Reader.h"
 #include "TMVA/MethodCuts.h"
 #include "TVector3.h"
-#include "../BDT/MVAfunc.cxx"
+#include "MVAfunc.cxx"
 
 void DY_photon_producer(string year, TString cat){
   TFile* dyfile;
+  TTree* picotree;
   if (year == "2016"){
     dyfile = new TFile("/net/cms11/cms11r0/pico/NanoAODv9/htozgamma_redwood_v1/2016/mc/merged_zgmc_llg/merged_pico_llg_DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8_zgmc_llg_nfiles_41.root", "READ");
   }
@@ -43,10 +45,19 @@ void DY_photon_producer(string year, TString cat){
   else if (year == "2023BPix"){
     dyfile = new TFile("/net/cms11/cms11r0/pico/NanoAODv12/htozgamma_redwood_v1/2023BPix/mc/merged_zgmc_llg/merged_pico_llg_DYto2L-2Jets_MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8_zgmc_llg_nfiles_221.root", "READ");
   }
+  else if (year == "2024"){
+    TChain* chain = new TChain("tree");
+    chain->Add("/net/cms11/cms11r0/pico/NanoAODv15/htozgamma_sequoia_v0/2024/mc/skim_llg/pico_llg_DYto2*.root");
+    picotree = chain;
+  }
 
-  auto picotree = (TTree*)dyfile->Get("tree");
-  auto fout = new TFile("DY_photon_output_redwood_v1_"+year+cat+".root", "RECREATE");
+  if (year != "2024"){
+    picotree = (TTree*)dyfile->Get("tree");
+  }
+  auto fout = new TFile(("DY_photon_output_redwood_v1_"+year+std::string(cat.Data())+".root").c_str(), "RECREATE");
   Long64_t event;
+  Int_t run;
+  Int_t lumiblock;
   float w_lumi;
   int npv;
   int nll;
@@ -77,6 +88,8 @@ void DY_photon_producer(string year, TString cat){
   std::vector<bool> *jet_isgood = new std::vector<bool>();
 
   picotree->SetBranchAddress("event", &event);
+  picotree->SetBranchAddress("run",&run);
+  picotree->SetBranchAddress("lumiblock", &lumiblock);
   picotree->SetBranchAddress("npv", &npv);
   picotree->SetBranchAddress("nll", &nll);
   picotree->SetBranchAddress("photon_hardprocess", &ph_ishard);
@@ -115,6 +128,8 @@ void DY_photon_producer(string year, TString cat){
   int index;
   float ph_pt_, ph_eta_, ph_phi_, idmva_, err_;
   outtree->Branch("event", &event);
+  outtree->Branch("run", &run);
+  outtree->Branch("lumiblock", &lumiblock);
   outtree->Branch("met", &met);
   outtree->Branch("met_phi", &met_phi);
   outtree->Branch("met_calo", &met_calo);
