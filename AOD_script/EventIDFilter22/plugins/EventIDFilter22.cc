@@ -118,7 +118,7 @@ bool EventIDFilter22::filter(edm::Event& iEvent, const edm::EventSetup& iSetup) 
 // ------------ method called once each stream before processing any runs, lumis or events  ------------
 void EventIDFilter22::beginStream(edm::StreamID) {
   // please remove this method if not needed
-  auto picofile = TFile::Open("root://eosuser.cern.ch//eos/user/f/fanx/DY_output_redwood_v1_2022.root", "READ");
+  auto picofile = TFile::Open("root://eosuser.cern.ch//eos/user/p/peike/run3mixing/DY_photon_output_redwood_v1_2024ggf.root", "READ");
   Long64_t event_pico = 0;
   int lumi_pico = 0;
   int run_pico = 0;

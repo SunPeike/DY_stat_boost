@@ -3,6 +3,7 @@ import ROOT
 import sys
 import argparse
 from array import array
+import glob
 #import pandas as pd
 #from IPython.display import display
 from DataFormats.FWLite import Handle, Events
@@ -11,7 +12,7 @@ parser.add_argument('-n', '--number')
 parser.add_argument('-y', '--year')
 args = parser.parse_args()
 print("It begins")
-file0 = ROOT.TFile.Open('/eos/user/f/fanx/event_mixing/sample/DY_photon_output_redwood_v1_'+args.year+'.root', "READ")
+file0 = ROOT.TFile.Open('/eos/user/p/peike/run3mixing/DY_photon_output_redwood_v1_2024ggf.root',"READ")
 tree0 = file0.Get("tree")
 if args.year == '2017':
     aodDir = '/afs/cern.ch/user/f/fanx/EOS_space/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/HtoZg_DY_fakePhoton_photonObjectSel_redo/240525_225334/0000/match_ph_'+args.number+'.root'
@@ -21,7 +22,9 @@ elif args.year == '2016':
     aodDir = '/afs/cern.ch/user/f/fanx/EOS_space/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/HtoZg_DY_fakePhoton_merge_2016_photonObjectSel/240710_101537/0000/eventmatch_DY_16photon_'+args.number+'.root'
 elif args.year == '2016APV':
     aodDir = '/afs/cern.ch/user/f/fanx/EOS_space/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/HtoZg_DY_fakePhoton_merge_2016APV_photonObjectSel/240710_101632/0000/eventmatch_DY_16APVphoton_'+args.number+'.root'
-
+elif args.year =='2024':
+    baseDir = '/eos/user/p/peike/DYto2E-2Jets_Bin-MLL-50_TuneCP5_13p6TeV_amcatnloFXFX-pythia8/HtoZg_DY_fakePhoton_2024_E_mini/261016_030047'
+    aodDir = glob.glob(baseDir + '/000*/eventmatch_DY_24_E_' + args.number + '.root')[0]
 nEntries = tree0.GetEntries()
 #truth = open('/eos/user/f/fanx/event_mixing/list/match_list_' + args.number + '.txt', 'w')
 #notruth = open('/eos/user/f/fanx/event_mixing/list/nomatch_list_' + args.number + '.txt', 'w')
@@ -31,13 +34,16 @@ motherList = []
 zero = [0]
 
 aod = Events(aodDir)
-handle  = Handle('std::vector<reco::GenParticle>')
-label = ("genParticles")
+#handle  = Handle('std::vector<reco::GenParticle>')
+#label = ("genParticles")
+handle = Handle('std::vector<pat::PackedGenParticle>')
+label = ("packedGenParticles")
 nfound = 0
 
-outfile = ROOT.TFile('/eos/user/f/fanx/event_mixing/condor_sample/no_match_ph_'+args.year+'_' + args.number + '.root', 'RECREATE')
+#outfile = ROOT.TFile('/eos/user/f/fanx/event_mixing/condor_sample/no_match_ph_'+args.year+'_' + args.number + '.root', 'RECREATE')
+outfile = ROOT.TFile('/eos/user/p/peike/run3mixing/no_match_ph_'+args.year+'_' + args.number + '.root', 'RECREATE')
 outtree = ROOT.TTree("tree", "tree")
-event_id = array('i', [0])
+event_id = array('q', [0])
 npv = array('i', [0])
 w_lumi = array('f', [0])
 photon_pt = array('f', [0])
@@ -58,7 +64,7 @@ w_pu = array('f', [0])
 njet = array('i', [0])
 nbdfm = array('i', [0])
 
-outtree.Branch('photon_event', event_id, 'photon_event/I')
+outtree.Branch('photon_event', event_id, 'photon_event/L')
 outtree.Branch('npv', npv, 'npv/I')
 outtree.Branch('njet', njet, 'njet/I')
 outtree.Branch('ph_index', ph_index, 'ph_index/I')
@@ -84,6 +90,8 @@ for inx, event in enumerate(aod):
     if inx > 10000: break
     if inx%100 == 0: print("Processing ", inx)
     aodEventId = event.eventAuxiliary().event()
+    aodRun = event.eventAuxiliary().run()
+    aodLumi = event.eventAuxiliary().luminosityBlock() 
     event.getByLabel(label, handle)
     genpart = handle.product()
     choseId = 9999
@@ -111,7 +119,7 @@ for inx, event in enumerate(aod):
         found = False
         pico_entry = tree0.event
         mindR = 999.
-        if aodEventId == pico_entry: 
+        if (aodEventId == pico_entry and aodRun == tree0.run and aodLumi == tree0.lumiblock): 
             nfound +=1
             found = True
             mindR = 999.
@@ -151,8 +159,8 @@ for inx, event in enumerate(aod):
                 if somedR < 0.1 and part.pdgId() == 22:
                     gen_ph_pt_list.append(part.pt())
                     gen_ph_index_list.append(idx)
-                    gen_mother_pt_list.append(part.mother().pt())
-                    gen_mother_id_list.append(part.mother().pdgId())
+                    gen_mother_pt_list.append(part.mother(0).pt())
+                    gen_mother_id_list.append(part.mother(0).pdgId())
                 if somedR < 0.1:
                     gen_pt_list.append(part.pt())
                     gen_index_list.append(idx)
@@ -161,7 +169,7 @@ for inx, event in enumerate(aod):
                     mindR = somedR
                     choseId = idx
             truthPDG = abs(genpart[choseId].pdgId())
-            motherPDG = abs(genpart[choseId].mother().pdgId())
+            motherPDG = abs(genpart[choseId].mother(0).pdgId())
             if truthPDG == 22 and mindR < 0.1:
                 max_ind = gen_ph_pt_list.index(max(gen_ph_pt_list))
                 maxPtInd = gen_ph_index_list[max_ind]
