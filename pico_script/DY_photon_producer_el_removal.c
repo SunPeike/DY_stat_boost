@@ -18,7 +18,7 @@
 #include "TVector3.h"
 #include "MVAfunc.cxx"
 
-void DY_photon_producer(string year, TString cat){
+void DY_photon_producer_el_removal(string year, TString cat){
   TFile* dyfile;
   TTree* picotree;
   if (year == "2016"){
@@ -54,7 +54,7 @@ void DY_photon_producer(string year, TString cat){
   if (year != "2024"){
     picotree = (TTree*)dyfile->Get("tree");
   }
-  auto fout = new TFile(("DY_photon_output_redwood_v1_"+year+std::string(cat.Data())+".root").c_str(), "RECREATE");
+  auto fout = new TFile(("DY_photon_output_redwood_v1_el_ph_removal_"+year+std::string(cat.Data())+".root").c_str(), "RECREATE");
   Long64_t event;
   Int_t run;
   Int_t lumiblock;
