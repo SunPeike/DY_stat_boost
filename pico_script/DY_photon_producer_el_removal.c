@@ -217,7 +217,7 @@ void DY_photon_producer(string year, TString cat){
     }
     bool vbf_pass = false;
     for (int j(0); j < ph_pt->size(); j++){
-      if ((*ph_pt)[j] > 15. && ((*ph_isScEtaEB)[j] || (*ph_isScEtaEE)[j]) && (*ph_elveto)[j] && (*ph_id80)[j] && ((*ph_elidx)[j] =- 1 || !(*el_sig)[(*ph_elidx)[j]]) ){
+      if ((*ph_pt)[j] > 15. && ((*ph_isScEtaEB)[j] || (*ph_isScEtaEE)[j]) && (*ph_elveto)[j] && (*ph_id80)[j] && ((*ph_elidx)[j] == -1 || !(*el_sig)[(*ph_elidx)[j]]) ){
 	index = j;
 	TLorentzVector g, ll;
 	ph_pt_ = (*ph_pt)[j];
